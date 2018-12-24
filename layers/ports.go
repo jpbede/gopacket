@@ -61,6 +61,7 @@ func (a TCPPort) LayerType() gopacket.LayerType {
 
 var tcpPortLayerType = [65536]gopacket.LayerType{
 	53:   LayerTypeDNS,
+	179:  LayerTypeBGP,       // BGP
 	443:  LayerTypeTLS,       // https
 	502:  LayerTypeModbusTCP, // modbustcp
 	636:  LayerTypeTLS,       // ldaps
