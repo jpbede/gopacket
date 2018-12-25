@@ -22,7 +22,7 @@ type BGP struct {
 
 	MessageLength uint16
 	MessageType   BGPMessageType
-	Messages      BGPMessage
+	Message       BGPMessage
 }
 
 // LayerType returns gopacket.LayerTypeBGP
@@ -83,20 +83,20 @@ func (b *BGP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	data, b.MessageLength = data[2:], binary.BigEndian.Uint16(data[:2])
 	data, b.MessageType = data[1:], BGPMessageType(data[0])
 
-	if len(data) > 0 { // decode messages
+	if len(data) > 0 { // decode bgp message
 		switch b.MessageType {
 		case BGPMessageTypeOpen:
 			if message, err := decodeBGPOpenMessage(data, b); err == nil {
-				b.Messages = message
+				b.Message = message
 			} else {
 				return err
 			}
 		case BGPMessageTypeUpdate:
-			if message, err := decodeBGPUpdateMessage(data, b); err == nil {
-				b.Messages = message
+			/*if message, err := decodeBGPUpdateMessage(data, b); err == nil {
+				b.Message = message
 			} else {
 				return err
-			}
+			}*/
 		case BGPMessageTypeNotification:
 		case BGPMessageTypeKeepAlive:
 			// keep alive message just consists out of the message header
@@ -223,29 +223,22 @@ func decodeBGPUpdateMessage(data []byte, bgp *BGP) (BGPUpdateMessage, error) {
 	data, bm.TotalPathAttributeLength = data[2:], binary.BigEndian.Uint16(data[:2])
 	if bm.TotalPathAttributeLength > 0 {
 		data, _ = data[bm.TotalPathAttributeLength:], data[:bm.TotalPathAttributeLength]
-	}
 
-	nlriLength := bgp.MessageLength
-	nlriLength -= bm.WithdrawnRoutesLength    // remove the withdrawn routes length
-	nlriLength -= bm.TotalPathAttributeLength // remove path attribtute length
-	nlriLength -= 19                          // remove header
-	nlriLength -= 4                           // remove fields
+		nlriLength := bgp.MessageLength
+		nlriLength -= bm.WithdrawnRoutesLength    // remove the withdrawn routes length
+		nlriLength -= bm.TotalPathAttributeLength // remove path attribtute length
+		nlriLength -= 19                          // remove header
+		nlriLength -= 4                           // remove fields
 
-	if nlriLength > 0 {
 		for len(data) > 0 {
 			var prefixLength uint8
 			data, prefixLength = data[1:], uint8(data[0])
-
-			spew.Dump(prefixLength)
+			if prefixLength > 0 {
+				var prefix []byte
+				data, prefix = data[(prefixLength/8):], data[:(prefixLength/8)]
+				spew.Dump(prefix)
+			}
 		}
-		/*for len(nlri) > 0 {
-			var prefixLength uint8
-			var prefix []byte
-			nlri, prefixLength = nlri[1:], uint8(nlri[0])
-			nlri, prefix = nlri[prefixLength:], nlri[:prefixLength]
-
-			spew.Dump(net.IP(prefix))
-		}*/
 	}
 
 	return bm, nil
