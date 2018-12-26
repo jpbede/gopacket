@@ -20,9 +20,9 @@ func decodeBGP(data []byte, p gopacket.PacketBuilder) error {
 type BGP struct {
 	BaseLayer
 
-	MessageLength uint16
-	MessageType   BGPMessageType
-	Message       BGPMessage
+	Length      uint16
+	MessageType BGPMessageType
+	Message     BGPMessage
 }
 
 // LayerType returns gopacket.LayerTypeBGP
@@ -79,8 +79,8 @@ func (bmt BGPMessageType) String() string {
 func (b *BGP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	b.BaseLayer = BaseLayer{Contents: data}
 
-	data, _ = data[16:], data[:16] // first 16 bytes are for compatibility so we can skip
-	data, b.MessageLength = data[2:], binary.BigEndian.Uint16(data[:2])
+	data = data[16:] // first 16 bytes are for compatibility so we can skip
+	data, b.Length = data[2:], binary.BigEndian.Uint16(data[:2])
 	data, b.MessageType = data[1:], BGPMessageType(data[0])
 
 	if len(data) > 0 { // decode bgp message
@@ -224,7 +224,7 @@ func decodeBGPUpdateMessage(data []byte, bgp *BGP) (BGPUpdateMessage, error) {
 	if bm.TotalPathAttributeLength > 0 {
 		data, _ = data[bm.TotalPathAttributeLength:], data[:bm.TotalPathAttributeLength]
 
-		nlriLength := bgp.MessageLength
+		nlriLength := bgp.Length
 		nlriLength -= bm.WithdrawnRoutesLength    // remove the withdrawn routes length
 		nlriLength -= bm.TotalPathAttributeLength // remove path attribtute length
 		nlriLength -= 19                          // remove header
