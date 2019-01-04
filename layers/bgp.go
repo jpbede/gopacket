@@ -2,7 +2,6 @@ package layers
 
 import (
 	"encoding/binary"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/gopacket"
 )
 
@@ -92,11 +91,11 @@ func (b *BGP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 				return err
 			}
 		case BGPMessageTypeUpdate:
-			/*if message, err := decodeBGPUpdateMessage(data, b); err == nil {
+			if message, err := decodeBGPUpdateMessage(data, b); err == nil {
 				b.Message = message
 			} else {
 				return err
-			}*/
+			}
 		case BGPMessageTypeNotification:
 		case BGPMessageTypeKeepAlive:
 			// keep alive message just consists out of the message header
@@ -210,6 +209,7 @@ type BGPUpdateMessage struct {
 	BGPMessage
 	WithdrawnRoutesLength    uint16
 	TotalPathAttributeLength uint16
+	Prefixes                 [][]byte
 }
 
 func decodeBGPUpdateMessage(data []byte, bgp *BGP) (BGPUpdateMessage, error) {
@@ -236,7 +236,7 @@ func decodeBGPUpdateMessage(data []byte, bgp *BGP) (BGPUpdateMessage, error) {
 			if prefixLength > 0 {
 				var prefix []byte
 				data, prefix = data[(prefixLength/8):], data[:(prefixLength/8)]
-				spew.Dump(prefix)
+				bm.Prefixes = append(bm.Prefixes, prefix)
 			}
 		}
 	}
